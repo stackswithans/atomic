@@ -9,7 +9,7 @@
   "scripts": {
     "build": "rollup --config",
     "check": "tsc --noEmit",
-    "dev": "rollup --config"
+    "dev": "rollup --watch --config"
   },
   "files": [
     "/dist/*"

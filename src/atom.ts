@@ -31,7 +31,7 @@ type Atom = {
 const compileAtom = (atom: Atom): string => {
     const { atomId } = atom;
     liveAtoms[atom.instanceId] = atom;
-    return `{{> ${atomId} }}`;
+    return `{{> ${atomId} __appCtx.${atom.instanceId}.state}}`;
 };
 
 const Atom = (
@@ -76,4 +76,6 @@ const atom = (atomShape: AtomShape) => {
         return newAtom;
     };
 };
-export { atom, type Atom };
+
+const getRenderedAtoms = () => liveAtoms;
+export { atom, type Atom, getRenderedAtoms };

@@ -22,6 +22,6 @@ export default {
             // Multiple folders to serve from
             contentBase: ["dist", "examples"],
         }),
-        livereload(),
+        livereload("dist"),
     ],
 };

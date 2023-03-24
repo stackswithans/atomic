@@ -1,6 +1,8 @@
 /*@ts-ignore*/
 import * as Handlebars from "../node_modules/handlebars/dist/handlebars";
 import { getUniqueId, isType } from "./utils";
+import { atom, Atom, getRenderedAtoms } from "./atom";
+import { view } from "./view";
 
 const __globalCtx = {};
 
@@ -34,29 +36,27 @@ const resolveState = async (state) => {
         const resolvedState = await state();
         if (!isType(resolvedState, "object"))
             throw new Error("State must be an object");
-        return new Electron(resolvedState);
+        return resolvedState;
     }
-    return typeof state === "object"
-        ? new Electron(structuredClone(state))
-        : new Electron({});
+    return typeof state === "object" ? structuredClone(state) : {};
 };
 
 const getAppContext = async () => {
-    for (const key in __globalCtx) {
-        const atom = __globalCtx[key];
-        const electron = await resolveState(atom.state);
-
-        atom.state = {
-            ...electron.access(),
-            ...atom.props,
+    const renderedAtoms = getRenderedAtoms();
+    const appCtx = {};
+    for (const key in renderedAtoms) {
+        const atom = renderedAtoms[key];
+        const state = await resolveState(atom.state);
+        appCtx[atom.instanceId] = {
+            state: {
+                ...state,
+                ...atom.props,
+                __appCtx: appCtx,
+            },
         };
-        //Make context available to inner atoms
-        atom.state.__globalCtx = __globalCtx;
-        atom.state.__instanceId = atom.instanceId;
-        atom._electron = electron;
     }
     return {
-        __globalCtx,
+        __appCtx: appCtx,
     };
 };
 
@@ -81,7 +81,7 @@ const createDataBindings = async (rootEl, appContext) => {
     });
 };
 
-export const initAtomic = async (selectorOrEl: string | HTMLElement, atom) => {
+const initAtomic = async (selectorOrEl: string | HTMLElement, atom: Atom) => {
     let el = selectorOrEl;
     if (typeof selectorOrEl === "string")
         el = document.querySelector(selectorOrEl) as HTMLElement;
@@ -89,9 +89,12 @@ export const initAtomic = async (selectorOrEl: string | HTMLElement, atom) => {
         throw new Error("Invalid selector or element");
     }
 
-    const mainAtom = Handlebars.compile(renderAtom(atom));
+    const mainAtom = Handlebars.compile(atom.compile({ parent: atom }));
     const atomicCtx = await getAppContext();
     el.innerHTML = mainAtom(atomicCtx);
+    const newRoot = el.children[0];
+    el.replaceWith(newRoot);
     await createEventBindings(el, atomicCtx);
     await createDataBindings(el, atomicCtx);
 };
+export { initAtomic, atom, view };
