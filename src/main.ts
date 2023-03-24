@@ -1,13 +1,6 @@
-import * as Handlebars from "handlebars";
-
-var counters = new Map();
-
-const getUniqueId = (prefix) => {
-    if (!counters.has(prefix)) counters.set(prefix, 0);
-    const nextId = counters.get(prefix);
-    counters.set(prefix, nextId + 1);
-    return `${prefix}_${nextId}`;
-};
+/*@ts-ignore*/
+import * as Handlebars from "../node_modules/handlebars/dist/handlebars";
+import { getUniqueId, isType } from "./utils";
 
 const __globalCtx = {};
 
@@ -65,25 +58,6 @@ Handlebars.registerHelper("on", function (event, handler) {
     );
 });
 
-const bind = (bond) => ({
-    _type: "BINDING",
-    atom: "",
-    bond,
-});
-
-Handlebars.registerHelper("bind", function (event, handler) {
-    const { __instanceId } = this;
-    handler = isType(handler, "string") ? handler : null;
-
-    return new Handlebars.SafeString(
-        `data-atomic-on=${JSON.stringify({
-            event,
-            instanceId: __instanceId,
-            handler,
-        })}`
-    );
-});
-
 const isAtom = (particle) => particle.atomId && particle.instanceId;
 const isBinding = (particle) => particle._type === "BINDING";
 
@@ -125,13 +99,6 @@ const view = (viewParts, ...particles) => {
     };
 };
 
-const extractViewParts = (view) => {
-    let { builtView, subAtoms } = view;
-    builtView = builtView ? builtView : view;
-    subAtoms = subAtoms ? subAtoms : [];
-    return { builtView, subAtoms };
-};
-
 const bubbleEvent = async (atom, event, data) => {
     //If there is no handler, bubble events
     for (const observer of atom._parentEventObservers) {
@@ -140,73 +107,6 @@ const bubbleEvent = async (atom, event, data) => {
         return;
     }
 };
-
-const callEventHandler = async (atom, handler, data) => {
-    // Allow for inline function handlers
-    if (!(handler in atom.actions)) {
-        throw new Error(`the action ${handler} does not exist on the atom`);
-    }
-    const state = atom._electron.access();
-    const setState = atom._electron.setData.bind(atom._electron);
-
-    await atom.actions[handler]({
-        state,
-        setState,
-        eventData: data,
-    });
-};
-
-const makeAtom = (atomId, instanceId, atomDef, props) => ({
-    atomId,
-    instanceId,
-    view: null,
-    state: atomDef.state,
-    actions: atomDef.actions ? atomDef.actions : {},
-    props,
-    bindings: {},
-    on(event, handler) {
-        this._parentEventObservers.push({ event, handler });
-        return this;
-    },
-    _parent: null,
-    _parentEventObservers: [],
-    async _onChildAtomEvent(event, handler, data) {
-        if (!handler) {
-            //If there is no handler, bubble events
-            bubbleEvent(this, event, data);
-            return;
-        }
-        if (typeof handler === "function") {
-            console.error("Have not yet implemented function handlers");
-            return;
-        }
-        // TODO: Allow for inline function handlers
-        callEventHandler(this, handler, data);
-    },
-    async _onChildElementEvent(event, handler, data) {
-        if (!handler) {
-            //If there is no handler, bubble events
-            bubbleEvent(this, event, data);
-            return;
-        }
-        await callEventHandler(this, handler, data);
-    },
-});
-
-const atom = (atomDef) => {
-    const atomId = getUniqueId("atom");
-
-    return (props = {}) => {
-        const instanceId = getUniqueId("instance");
-        const newAtom = makeAtom(atomId, instanceId, atomDef, props);
-        newAtom.view = atomDef.view(newAtom);
-        //subAtoms.forEach((atom) => (atom._parent = newAtom));
-        Handlebars.registerPartial(atomId, newAtom.view);
-        return newAtom;
-    };
-};
-
-const isType = (obj, type) => typeof obj === type;
 
 const resolveState = async (state) => {
     if (typeof state === "function") {
@@ -220,7 +120,7 @@ const resolveState = async (state) => {
         : new Electron({});
 };
 
-const renderAtom = (atom) => {
+const renderAtom = (atom: Atom) => {
     const { instanceId, atomId } = atom;
     __globalCtx[atom.instanceId] = atom;
     return `{{> ${atomId} __globalCtx.${instanceId}.state}}`;
@@ -287,10 +187,13 @@ const createEventBindings = async (rootEl, appContext) => {
     });
 };
 
-const initAtomic = async (selectorOrEl, atom) => {
+export const initAtomic = async (selectorOrEl: string | HTMLElement, atom) => {
     let el = selectorOrEl;
     if (typeof selectorOrEl === "string")
-        el = document.querySelector(selectorOrEl);
+        el = document.querySelector(selectorOrEl) as HTMLElement;
+    if (!(el instanceof HTMLElement)) {
+        throw new Error("Invalid selector or element");
+    }
     const mainAtom = Handlebars.compile(renderAtom(atom));
     const atomicCtx = await getAppContext();
     el.innerHTML = mainAtom(atomicCtx);
