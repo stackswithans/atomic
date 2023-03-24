@@ -29,6 +29,36 @@ const callEventHandler = async (atom, handler, data) => {
     });
 };
 
+const bubbleEvent = async (atom, event, data) => {
+    //If there is no handler, bubble events
+    for (const observer of atom._parentEventObservers) {
+        if (observer.event !== event) continue;
+        await atom._parent._onChildAtomEvent(event, observer.handler, data);
+        return;
+    }
+};
+
+const createEventBindings = async (rootEl, appContext) => {
+    const emittingElements = [...rootEl.querySelectorAll("[data-atomic-on]")];
+
+    emittingElements.forEach((element) => {
+        const { event, instanceId, handler } = JSON.parse(
+            element.getAttribute("data-atomic-on")
+        );
+        element.addEventListener(event, async (e) => {
+            await appContext.__globalCtx[instanceId]._onChildElementEvent(
+                event,
+                handler,
+                {
+                    el: element,
+                    atom: appContext.__globalCtx[instanceId],
+                    domEvent: e,
+                }
+            );
+        });
+    });
+};
+
 async function _onChildAtomEvent(event, handler, data) {
     if (!handler) {
         //If there is no handler, bubble events

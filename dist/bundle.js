@@ -1,3 +1,30 @@
+
+(function(l, r) { if (!l || l.getElementById('livereloadscript')) return; r = l.createElement('script'); r.async = 1; r.src = '//' + (self.location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1'; r.id = 'livereloadscript'; l.getElementsByTagName('head')[0].appendChild(r) })(self.document);
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+
+function __awaiter(thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+}
+
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 var handlebarsExports = {};
@@ -5073,6 +5100,11 @@ THE SOFTWARE.
 	});
 } (handlebars));
 
+function isType(obj, typeStr) {
+    return typeof obj === typeStr;
+}
+
+const __globalCtx = {};
 handlebarsExports.registerHelper("on", function (event, handler) {
     const { __instanceId } = this;
     handler = typeof handler === "string" ? handler : null;
@@ -5082,13 +5114,57 @@ handlebarsExports.registerHelper("on", function (event, handler) {
         handler,
     })}`);
 });
-handlebarsExports.registerHelper("bind", function (event, handler) {
-    const { __instanceId } = this;
-    handler = isType(handler, "string") ? handler : null;
-    return new handlebarsExports.SafeString(`data-atomic-on=${JSON.stringify({
-        event,
-        instanceId: __instanceId,
-        handler,
-    })}`);
+const resolveState = (state) => __awaiter(void 0, void 0, void 0, function* () {
+    if (typeof state === "function") {
+        const resolvedState = yield state();
+        if (!isType(resolvedState, "object"))
+            throw new Error("State must be an object");
+        return new Electron(resolvedState);
+    }
+    return typeof state === "object"
+        ? new Electron(structuredClone(state))
+        : new Electron({});
 });
-const isType = (obj, type) => typeof obj === type;
+const getAppContext = () => __awaiter(void 0, void 0, void 0, function* () {
+    for (const key in __globalCtx) {
+        const atom = __globalCtx[key];
+        const electron = yield resolveState(atom.state);
+        atom.state = Object.assign(Object.assign({}, electron.access()), atom.props);
+        atom.state.__globalCtx = __globalCtx;
+        atom.state.__instanceId = atom.instanceId;
+        atom._electron = electron;
+    }
+    return {
+        __globalCtx,
+    };
+});
+const createDataBindings = (rootEl, appContext) => __awaiter(void 0, void 0, void 0, function* () {
+    const boundControls = [
+        ...rootEl.querySelectorAll("input[data-atomic-bind]"),
+    ];
+    boundControls.forEach((element) => {
+        console.log(element.getAttribute("data-atomic-bind"));
+        const { bindId, atom } = JSON.parse(element.getAttribute("data-atomic-bind"));
+        console.log("BINDING", element, bindId, atom);
+        element.addEventListener("input", (event) => __awaiter(void 0, void 0, void 0, function* () {
+            const atomObj = appContext.__globalCtx[atom];
+            const bindInfo = atomObj.bindings[bindId];
+            bindInfo.bond.setData(event.target.value);
+        }));
+    });
+});
+const initAtomic = (selectorOrEl, atom) => __awaiter(void 0, void 0, void 0, function* () {
+    let el = selectorOrEl;
+    if (typeof selectorOrEl === "string")
+        el = document.querySelector(selectorOrEl);
+    if (!(el instanceof HTMLElement)) {
+        throw new Error("Invalid selector or element");
+    }
+    const mainAtom = handlebarsExports.compile(renderAtom(atom));
+    const atomicCtx = yield getAppContext();
+    el.innerHTML = mainAtom(atomicCtx);
+    yield createEventBindings(el, atomicCtx);
+    yield createDataBindings(el, atomicCtx);
+});
+
+export { initAtomic };

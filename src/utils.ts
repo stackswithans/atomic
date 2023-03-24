@@ -9,6 +9,10 @@ export const getUniqueId = (prefix: string): string => {
     return `${prefix}_${nextId}`;
 };
 
-export function isType<T>(obj: T, typeStr: ReturnType<typeof typeOf>): boolean {
+export function isType(obj: any, typeStr: ReturnType<typeof typeOf>): boolean {
     return typeof obj === typeStr;
+}
+
+export function isObject(obj: any): obj is object {
+    return typeof obj === "object";
 }

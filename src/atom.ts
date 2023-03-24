@@ -1,6 +1,9 @@
 /*@ts-ignore*/
 import * as Handlebars from "../node_modules/handlebars/dist/handlebars";
 import { getUniqueId } from "./utils";
+import { ViewContext } from "./view";
+
+const liveAtoms: Record<string, Atom> = {};
 
 type AtomShape = {
     view: (atom: Atom) => string;
@@ -17,10 +20,18 @@ type Atom = {
     state: object;
     actions: object;
     _parent: Atom | null;
+    subAtoms: Atom[];
 
     on(event: string, handler: any): Atom;
+    compile(ctx: ViewContext): string;
     //eventParticle: EventParticle;
     //_parentEventObservers: AtomObserver[];
+};
+
+const compileAtom = (atom: Atom): string => {
+    const { atomId } = atom;
+    liveAtoms[atom.instanceId] = atom;
+    return `{{> ${atomId} }}`;
 };
 
 const Atom = (
@@ -40,19 +51,28 @@ const Atom = (
         on(event, handler) {
             return this;
         },
+        compile(ctx: ViewContext): string {
+            this._parent = ctx.parent;
+            return compileAtom(this);
+        },
         _parent: null,
+        subAtoms: [],
     };
 };
 
 const atom = (atomShape: AtomShape) => {
     const atomId = getUniqueId("atom");
+    let atomIsRegistered = false;
 
     return (props = {}) => {
         const instanceId = getUniqueId("instance");
         const newAtom = Atom(atomId, instanceId, atomShape, props);
         newAtom.view = atomShape.view(newAtom);
-        //subAtoms.forEach((atom) => (atom._parent = newAtom));
-        Handlebars.registerPartial(atomId, newAtom.view);
+        if (!atomIsRegistered) {
+            Handlebars.registerPartial(atomId, newAtom.view);
+            atomIsRegistered = true;
+        }
+
         return newAtom;
     };
 };
