@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "target":"ES6", 
+        "module": "esnext",
+        "strict":true,
+        "removeComments": true,
+        "noImplicitAny":true, 
+        "sourceMap": false, 
+        "outDir":"./dist/", 
+        "declaration":true, 
+        "moduleResolution": "node"
+    },
+    "include": ["./src/**/*"],
+    "exclude": ["node_modules", "**/*.spec.ts"]
+}
