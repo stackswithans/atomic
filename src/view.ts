@@ -11,18 +11,26 @@ export type ViewParticle = {
 
 export const view = (viewParts: string[], ...particles: ViewParticle[]) => {
     return (ctx: ViewContext) => {
-        //viewParts = viewParts.map((str) => str.trim());
+        viewParts = viewParts.map((str) => str.trim());
         const result = [viewParts[0]];
         let i = 0;
         for (const particle of particles) {
-            console.log("compile result", particle.compile(ctx));
-            result.push(particle.compile(ctx), viewParts[i + 1]);
+            const viewMarkup = particle.compile(ctx);
+            result.push(viewMarkup, viewParts[i + 1]);
             i++;
         }
+
         const builtView = result.join("");
-        console.log("build result", builtView);
+        //console.log("build result", builtView);
         return builtView;
     };
 };
+
+export function buildAtomSubTree(atom: Atom): HTMLElement {
+    const template = document.createElement("template");
+    template.innerHTML = atom.view.trim();
+    console.log("SUBTREE", template.content.firstChild);
+    return template.content.firstChild as HTMLElement;
+}
 
 export type ViewBuilder = ReturnType<typeof view>;

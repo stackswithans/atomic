@@ -1,26 +1,12 @@
 /*@ts-ignore*/
-import * as Handlebars from "../node_modules/handlebars/dist/handlebars";
+//import * as Handlebars from "../node_modules/handlebars/dist/handlebars";
 import { getUniqueId, isType } from "./utils";
 import { atom, Atom, getRenderedAtoms } from "./atom";
 import { view } from "./view";
 import { on } from "./protons";
+import { useOrbit } from "./orbit";
+import { runAtomicEventSetup } from "./event";
 
-const __globalCtx = {};
-
-Handlebars.registerHelper("on", function (event, handler) {
-    const { __instanceId } = this;
-    handler = typeof handler === "string" ? handler : null;
-
-    return new Handlebars.SafeString(
-        `data-atomic-on=${JSON.stringify({
-            event,
-            instanceId: __instanceId,
-            handler,
-        })}`
-    );
-});
-
-const isBinding = (particle) => particle._type === "BINDING";
 const renderBinding = (particle, ctxAtom) => {
     particle.atom = ctxAtom.instanceId;
     const bindId = getUniqueId("bind");
@@ -42,6 +28,7 @@ const resolveState = async (state) => {
     return typeof state === "object" ? structuredClone(state) : {};
 };
 
+/*
 const getAppContext = async () => {
     const renderedAtoms = getRenderedAtoms();
     const appCtx = {};
@@ -81,8 +68,12 @@ const createDataBindings = async (rootEl, appContext) => {
         });
     });
 };
+*/
 
-const initAtomic = async (selectorOrEl: string | HTMLElement, atom: Atom) => {
+const initAtomic = async (
+    selectorOrEl: string | HTMLElement,
+    rootAtom: Atom
+) => {
     let el = selectorOrEl;
     if (typeof selectorOrEl === "string")
         el = document.querySelector(selectorOrEl) as HTMLElement;
@@ -90,14 +81,10 @@ const initAtomic = async (selectorOrEl: string | HTMLElement, atom: Atom) => {
         throw new Error("Invalid selector or element");
     }
 
-    const mainAtom = Handlebars.compile(
-        atom.compile({ parent: null, ctxAtom: atom })
-    );
-    const atomicCtx = await getAppContext();
-    el.innerHTML = mainAtom(atomicCtx);
-    const newRoot = el.children[0];
-    el.replaceWith(newRoot);
-    await createEventBindings(el, atomicCtx);
-    await createDataBindings(el, atomicCtx);
+    const view = rootAtom.compile({ parent: null, ctxAtom: rootAtom });
+    console.log("rootAtom:", view);
+    el.replaceWith(rootAtom.subTree as HTMLElement);
+    setTimeout(() => runAtomicEventSetup(), 100);
+    //await createDataBindings(el, atomicCtx);
 };
-export { initAtomic, atom, view, on };
+export { initAtomic, atom, view, on, useOrbit };

@@ -5,15 +5,34 @@ type AtomicEContext = {
     domEvent: Event;
 };
 
-type Microscope = {
-    _onChildAtomEvent(
-        event: Event,
-        handler: AtomicEHandler,
-        data: AtomicEContext
-    ): void;
-    _onChildElementEvent(event, handler, data): void;
+type EHandler = <T>(some: any) => T;
+
+const activeSubjects: Subject[] = [];
+
+export const registerSubject = (subject: Subject) =>
+    activeSubjects.push(subject);
+
+export type ObserveSpec = {
+    target: Subject;
+    event: string;
+    handler: EHandler | null;
 };
 
+export interface Subject {
+    addObserver(observer: Microscope, observeSpec: ObserveSpec): void;
+    prepare(): void;
+}
+
+export interface Microscope {
+    observe(observeSpec: ObserveSpec): void;
+    onEvent(observeSpec: ObserveSpec, details: any): Promise<void>;
+}
+
+export function runAtomicEventSetup() {
+    activeSubjects.forEach((subject) => subject.prepare());
+}
+
+/*
 const callEventHandler = async (atom, handler, data) => {
     // Allow for inline function handlers
     if (!(handler in atom.actions)) {
@@ -81,3 +100,4 @@ async function _onChildElementEvent(event, handler, data) {
     }
     await callEventHandler(this, handler, data);
 }
+*/

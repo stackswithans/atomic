@@ -19,9 +19,12 @@
     src="https://unpkg.com/@stylin.js/stylina@0.0.3-alpha.10/dist/autorun.js">
     </script>
     <script type="module">
-        import { initAtomic, atom, view, on } from "./bundle.js";
+        import { initAtomic, atom, view, on, useOrbit } from "./bundle.js";
+        
 
-        console.log(on);
+        const count = useOrbit({count: 0});
+        console.log(count);
+
 
         const Counter = atom({
             state: { count: 0 }, 
@@ -35,7 +38,7 @@
                  in-flex-direction="column"
                 >
                     <div in-margin-bottom="1rem">
-                        <h1>{{count}}</h1>
+                        <h1>${count.count}</h1>
                     </div>
                     <div>
                         <button ${on("click", "increment")} type="button" in-padding="1em">

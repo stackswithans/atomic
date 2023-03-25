@@ -16,3 +16,10 @@ export function isType(obj: any, typeStr: ReturnType<typeof typeOf>): boolean {
 export function isObject(obj: any): obj is object {
     return typeof obj === "object";
 }
+
+export function isTypePred<T>(
+    obj: any,
+    typeStr: ReturnType<typeof typeOf>
+): obj is T {
+    return typeof obj === typeStr;
+}

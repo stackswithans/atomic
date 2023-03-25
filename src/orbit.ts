@@ -1,4 +1,5 @@
-import { isType, isObject } from "./utils";
+import { isType, isObject, isTypePred } from "./utils";
+import { ViewContext } from "./view";
 
 const orbitRootKey = "__root";
 
@@ -8,15 +9,49 @@ export type State = {
     [key: string]: Primitive<never>;
 };
 
-type Electron<T> = {
-    _path: string;
-    _data: T;
-    [key: string]: Primitive<T>;
-};
+type onMutation<T> = (newVal: T) => void;
 
-function makeElectron<T>(path: string, data: T): Electron<T> {
-    return { _path: path, _data: data };
+export class Electron<T> {
+    private _observers: onMutation<T>[] = [];
+    private _path: string;
+    private _data: T;
+    [key: string]: Primitive<T>;
+
+    compile(ctx: ViewContext): string {
+        this.observe(() => ctx.ctxAtom.onMutation(this));
+        return `${this.view()}`;
+    }
+    view(): T {
+        return this._data;
+    }
+    mutate(state: T): T;
+
+    mutate(mutation: T | ((oldState: T) => T)): T {
+        let newVal: T;
+        if (isTypePred<Function>(mutation, "function")) {
+            newVal = mutation(this._data);
+        } else {
+            newVal = mutation;
+        }
+        this._data = newVal;
+        this._observers.forEach((onMutation) => {
+            onMutation(newVal);
+        });
+        return newVal;
+    }
+
+    observe(fn: onMutation<T>): void {
+        this._observers.push(fn);
+    }
+
+    constructor(path: string, data: T) {
+        this._path = path;
+        this._data = data;
+    }
 }
+
+const makeElectron = <T>(path: string, data: T): Electron<T> =>
+    new Electron(path, data);
 
 export type OrbitRefs<T> = Record<string, Electron<T>>;
 
@@ -41,7 +76,7 @@ class Orbit<T extends AtomicState> {
             return;
         }
         for (const key in currentRootObj) {
-            const path = currentRootPath + key;
+            const path = currentRootPath + "." + key;
             this._electrons[currentRootPath][key] = makeElectron(
                 path,
                 currentRootObj[key]
@@ -58,19 +93,7 @@ class Orbit<T extends AtomicState> {
     }
 }
 
-export function view<T extends AtomicState>(ref: OrbitRefs<T>): T {}
-
-export function mutate<T extends AtomicState>(
-    ref: OrbitRefs<T>,
-    state: AtomicState
-): T;
-
-export function mutate<T extends AtomicState>(
-    ref: OrbitRefs<T>,
-    state: AtomicState | ((oldState: AtomicState) => AtomicState)
-): T {}
-
 export function useOrbit<T extends AtomicState>(initialState: T) {
     const orbit = new Orbit(initialState);
-    return orbit.getElectrons();
+    return orbit.getElectrons().__root;
 }

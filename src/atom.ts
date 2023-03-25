@@ -1,37 +1,53 @@
 /*@ts-ignore*/
-import * as Handlebars from "../node_modules/handlebars/dist/handlebars";
 import { getUniqueId } from "./utils";
-import { ViewContext, ViewBuilder } from "./view";
+import { ViewContext, ViewBuilder, buildAtomSubTree } from "./view";
+import { Microscope, Subject, ObserveSpec } from "./event";
+import { Electron } from "./orbit";
 
 const liveAtoms: Record<string, Atom> = {};
+
+type AtomAction = <T>(some: any) => T;
 
 type AtomShape = {
     view: ViewBuilder;
     state?: Object;
-    actions?: Object;
+    actions?: Record<string, AtomAction>;
 };
 
-type Atom = {
+interface Atom extends Microscope, Subject {
     atomId: string;
     instanceId: string;
     view: string;
     props: object;
     bindings: object;
     state: object;
-    actions: object;
+    actions: Record<string, AtomAction>;
     _parent: Atom | null;
     subAtoms: Atom[];
-
+    subTree: HTMLElement | null;
     on(event: string, handler: any): Atom;
     compile(ctx: ViewContext): string;
-    //eventParticle: EventParticle;
-    //_parentEventObservers: AtomObserver[];
-};
+    viewBuilder: ViewBuilder;
+    onMutation<T>(ref: Electron<T>): void;
+}
 
-const compileAtom = (atom: Atom): string => {
-    const { atomId } = atom;
-    liveAtoms[atom.instanceId] = atom;
-    return `{{> ${atomId} __appCtx.${atom.instanceId}.state}}`;
+const atomMicroscope = {
+    observe(this: Atom, spec: ObserveSpec) {
+        spec.target.addObserver(this, spec);
+    },
+
+    async onEvent(this: Atom, spec: ObserveSpec, details: any) {
+        if (!spec.handler) {
+            //If there is no handler, bubble events
+            //this.notifyMicroscopes();
+            return;
+        }
+        spec.handler({
+            state: this.state,
+            props: this.props,
+            event: details,
+        });
+    },
 };
 
 const Atom = (
@@ -53,16 +69,27 @@ const Atom = (
         },
         compile(ctx: ViewContext): string {
             this._parent = ctx.parent;
-            return compileAtom(this);
+            ctx.parent?.subAtoms.push(this);
+            liveAtoms[this.instanceId] = this;
+            this.subTree = buildAtomSubTree(this);
+            console.log("this ran!!!");
+            return this.view.trim();
         },
         _parent: null,
+        viewBuilder: atomShape.view,
         subAtoms: [],
+        subTree: null,
+        ...atomMicroscope,
+        addObserver(observer: Microscope, observeSpec: ObserveSpec): void {},
+        prepare(): void {},
+        onMutation<T>(ref: Electron<T>): void {
+            //re-render
+        },
     };
 };
 
 const atom = (atomShape: AtomShape) => {
     const atomId = getUniqueId("atom");
-    let atomIsRegistered = false;
 
     return (props = {}) => {
         const instanceId = getUniqueId("instance");
@@ -71,10 +98,6 @@ const atom = (atomShape: AtomShape) => {
             ctxAtom: newAtom,
             parent: newAtom._parent,
         });
-        if (!atomIsRegistered) {
-            Handlebars.registerPartial(atomId, newAtom.view);
-            atomIsRegistered = true;
-        }
 
         return newAtom;
     };
