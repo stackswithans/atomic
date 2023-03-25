@@ -3,6 +3,7 @@ import * as Handlebars from "../node_modules/handlebars/dist/handlebars";
 import { getUniqueId, isType } from "./utils";
 import { atom, Atom, getRenderedAtoms } from "./atom";
 import { view } from "./view";
+import { on } from "./protons";
 
 const __globalCtx = {};
 
@@ -89,7 +90,9 @@ const initAtomic = async (selectorOrEl: string | HTMLElement, atom: Atom) => {
         throw new Error("Invalid selector or element");
     }
 
-    const mainAtom = Handlebars.compile(atom.compile({ parent: atom }));
+    const mainAtom = Handlebars.compile(
+        atom.compile({ parent: null, ctxAtom: atom })
+    );
     const atomicCtx = await getAppContext();
     el.innerHTML = mainAtom(atomicCtx);
     const newRoot = el.children[0];
@@ -97,4 +100,4 @@ const initAtomic = async (selectorOrEl: string | HTMLElement, atom: Atom) => {
     await createEventBindings(el, atomicCtx);
     await createDataBindings(el, atomicCtx);
 };
-export { initAtomic, atom, view };
+export { initAtomic, atom, view, on };

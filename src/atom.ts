@@ -1,12 +1,12 @@
 /*@ts-ignore*/
 import * as Handlebars from "../node_modules/handlebars/dist/handlebars";
 import { getUniqueId } from "./utils";
-import { ViewContext } from "./view";
+import { ViewContext, ViewBuilder } from "./view";
 
 const liveAtoms: Record<string, Atom> = {};
 
 type AtomShape = {
-    view: (atom: Atom) => string;
+    view: ViewBuilder;
     state?: Object;
     actions?: Object;
 };
@@ -67,7 +67,10 @@ const atom = (atomShape: AtomShape) => {
     return (props = {}) => {
         const instanceId = getUniqueId("instance");
         const newAtom = Atom(atomId, instanceId, atomShape, props);
-        newAtom.view = atomShape.view(newAtom);
+        newAtom.view = atomShape.view({
+            ctxAtom: newAtom,
+            parent: newAtom._parent,
+        });
         if (!atomIsRegistered) {
             Handlebars.registerPartial(atomId, newAtom.view);
             atomIsRegistered = true;

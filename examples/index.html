@@ -19,8 +19,9 @@
     src="https://unpkg.com/@stylin.js/stylina@0.0.3-alpha.10/dist/autorun.js">
     </script>
     <script type="module">
-        import { initAtomic, atom, view } from "./bundle.js";
+        import { initAtomic, atom, view, on } from "./bundle.js";
 
+        console.log(on);
 
         const Counter = atom({
             state: { count: 0 }, 
@@ -37,15 +38,24 @@
                         <h1>{{count}}</h1>
                     </div>
                     <div>
-                        <button type="button" in-padding="1em">
+                        <button ${on("click", "increment")} type="button" in-padding="1em">
                             Increment
                         </button>
-                        <button type="button" in-padding="1em">
+                        <button ${on("click", "decrement")} type="button" in-padding="1em">
                             Decrement
                         </button>
                     </div>
                 </div>
-            ` 
+            `,  
+            actions: {
+                increment(){
+                    console.log("increment")
+                }, 
+                decrement(){
+                    console.log("decrement")
+
+                }
+            }
         });
 
         initAtomic("#main", Counter());
