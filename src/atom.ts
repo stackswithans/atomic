@@ -1,6 +1,11 @@
 /*@ts-ignore*/
 import { getUniqueId } from "./utils";
-import { ViewContext, ViewBuilder, buildAtomSubTree } from "./view";
+import {
+    ViewContext,
+    ViewBuilder,
+    buildAtomSubTree,
+    requestRender,
+} from "./view";
 import { Microscope, Subject, ObserveSpec } from "./event";
 import { Electron } from "./orbit";
 
@@ -24,7 +29,8 @@ interface Atom extends Microscope, Subject {
     actions: Record<string, AtomAction>;
     _parent: Atom | null;
     subAtoms: Atom[];
-    subTree: HTMLElement | null;
+    reRender: boolean;
+    subTree: NodeListOf<ChildNode> | null;
     on(event: string, handler: any): Atom;
     compile(ctx: ViewContext): string;
     viewBuilder: ViewBuilder;
@@ -64,6 +70,7 @@ const Atom = (
         actions: atomShape.actions ? atomShape.actions : {},
         props,
         bindings: {},
+        reRender: false,
         on(event, handler) {
             return this;
         },
@@ -71,8 +78,11 @@ const Atom = (
             this._parent = ctx.parent;
             ctx.parent?.subAtoms.push(this);
             liveAtoms[this.instanceId] = this;
+            this.view = this.viewBuilder({
+                parent: this,
+                ctxAtom: this,
+            });
             this.subTree = buildAtomSubTree(this);
-            console.log("this ran!!!");
             return this.view.trim();
         },
         _parent: null,
@@ -84,6 +94,9 @@ const Atom = (
         prepare(): void {},
         onMutation<T>(ref: Electron<T>): void {
             //re-render
+            console.log("update pending");
+            this.reRender = true;
+            requestRender(this);
         },
     };
 };
@@ -93,13 +106,7 @@ const atom = (atomShape: AtomShape) => {
 
     return (props = {}) => {
         const instanceId = getUniqueId("instance");
-        const newAtom = Atom(atomId, instanceId, atomShape, props);
-        newAtom.view = atomShape.view({
-            ctxAtom: newAtom,
-            parent: newAtom._parent,
-        });
-
-        return newAtom;
+        return Atom(atomId, instanceId, atomShape, props);
     };
 };
 

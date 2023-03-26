@@ -1,4 +1,5 @@
 import { Atom } from "./atom";
+import { runAtomicEventSetup, clearOldSubjects } from "./event";
 
 export type ViewContext = {
     ctxAtom: Atom;
@@ -26,11 +27,39 @@ export const view = (viewParts: string[], ...particles: ViewParticle[]) => {
     };
 };
 
-export function buildAtomSubTree(atom: Atom): HTMLElement {
+export function buildAtomSubTree(atom: Atom): NodeListOf<ChildNode> {
     const template = document.createElement("template");
     template.innerHTML = atom.view.trim();
-    console.log("SUBTREE", template.content.firstChild);
-    return template.content.firstChild as HTMLElement;
+    const children = [...template.content.children];
+    children.forEach((child) => {
+        console.log("in here");
+        child.setAttribute(`data-atomic-atom`, atom.instanceId);
+    });
+    return template.content.childNodes;
+}
+
+export function requestRender(atom: Atom) {
+    //Clear old event handlers
+    clearOldSubjects();
+
+    const newAtomView = atom.compile({ parent: atom, ctxAtom: atom });
+
+    const oldElements = document.querySelectorAll(
+        `*[data-atomic-atom=${atom.instanceId}]`
+    );
+
+    //Add new elements html
+    const anchor = oldElements[0];
+    atom.subTree?.forEach((el) => {
+        anchor.parentNode?.append(el);
+    });
+
+    //Remove old elements
+    oldElements.forEach((el) => el.remove());
+
+    runAtomicEventSetup();
+
+    atom.reRender = false;
 }
 
 export type ViewBuilder = ReturnType<typeof view>;

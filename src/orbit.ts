@@ -18,7 +18,9 @@ export class Electron<T> {
     [key: string]: Primitive<T>;
 
     compile(ctx: ViewContext): string {
-        this.observe(() => ctx.ctxAtom.onMutation(this));
+        //Do not add subscription if it is a reRender
+        if (!ctx.ctxAtom.reRender)
+            this.observe(() => ctx.ctxAtom.onMutation(this));
         return `${this.view()}`;
     }
     view(): T {
@@ -28,6 +30,7 @@ export class Electron<T> {
 
     mutate(mutation: T | ((oldState: T) => T)): T {
         let newVal: T;
+        console.log("MUTATING");
         if (isTypePred<Function>(mutation, "function")) {
             newVal = mutation(this._data);
         } else {
@@ -35,12 +38,14 @@ export class Electron<T> {
         }
         this._data = newVal;
         this._observers.forEach((onMutation) => {
+            console.log("NOTIFYING SUBSCRIBERS");
             onMutation(newVal);
         });
         return newVal;
     }
 
     observe(fn: onMutation<T>): void {
+        console.log("SUBSCRIBED");
         this._observers.push(fn);
     }
 

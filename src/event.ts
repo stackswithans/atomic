@@ -7,7 +7,7 @@ type AtomicEContext = {
 
 type EHandler = <T>(some: any) => T;
 
-const activeSubjects: Subject[] = [];
+let activeSubjects: Subject[] = [];
 
 export const registerSubject = (subject: Subject) =>
     activeSubjects.push(subject);
@@ -26,6 +26,9 @@ export interface Subject {
 export interface Microscope {
     observe(observeSpec: ObserveSpec): void;
     onEvent(observeSpec: ObserveSpec, details: any): Promise<void>;
+}
+export function clearOldSubjects() {
+    activeSubjects = [];
 }
 
 export function runAtomicEventSetup() {

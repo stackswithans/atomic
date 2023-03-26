@@ -19,7 +19,10 @@
     src="https://unpkg.com/@stylin.js/stylina@0.0.3-alpha.10/dist/autorun.js">
     </script>
     <script type="module">
-        import { initAtomic, atom, view, on, useOrbit } from "./bundle.js";
+        "use strict";
+        import { initAtomic, atom, view, on, useOrbit, DOMAtoms } from "./bundle.js";
+
+        const { buildAtomTree, counter, div, mountAtom } = DOMAtoms;
         
 
         const count = useOrbit({count: 0});
@@ -52,16 +55,36 @@
             `,  
             actions: {
                 increment(){
-                    console.log("increment")
+                    count.count.mutate((count) => count + 1);
+                    console.log(count.count.view())
                 }, 
                 decrement(){
-                    console.log("decrement")
-
+                    count.count.mutate((count) => count - 1);
+                    console.log(count.count.view())
                 }
             }
         });
+        let other = {
+            div: {
+                div: [
+                    {
+                        h1: {
+                            $attr: "hello",
+                            _: count.count.view(),
+                        },
+                    },
+                    {
+                        button: "increment",
+                    },
+                ],
+            },
+        };
 
-        initAtomic("#main", Counter());
+        
+        counter.mount("#main");
+
+
+        //initAtomic("#main", Counter());
     </script>
 </body>
 </html>
