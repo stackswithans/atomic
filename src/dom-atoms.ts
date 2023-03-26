@@ -1,5 +1,7 @@
 import { isTypePred, isType } from "./utils";
 
+const CONTENTKEY = "content";
+
 type HTMLAttributes = Record<string, string>;
 
 interface Atom {
@@ -46,6 +48,12 @@ const text = (content: any): Atom => {
 const makeGenericDOMAtomFn = (el: string) => {
     return (data: Record<string, any>): DOMAtom => {
         let content = data.content;
+        let attrs = Object.keys(data)
+            .filter((value) => value !== CONTENTKEY)
+            .reduce((object: Record<string, any>, key) => {
+                object[key] = data[key];
+                return object;
+            }, {});
         if (
             typeof content["render"] !== "function" &&
             !isTypePred<Array<any>>(content, Array)
@@ -54,7 +62,7 @@ const makeGenericDOMAtomFn = (el: string) => {
         }
         return {
             el,
-            attrs: data.attrs ? data.attrs : {},
+            attrs: attrs ? attrs : {},
             content,
             subTree: null,
             render(): Node {
@@ -108,27 +116,26 @@ const Counter = div({
 })
 */
 export const counter = div({
-    attrs: {
-        "in-width": "100%",
-        "in-height": "100%",
-        "in-display": "flex",
-        "in-justify-content": "center",
-        "in-align-items": "center",
-        "in-flex-direction": "column",
-    },
+    "in-width": "100%",
+    "in-height": "100%",
+    "in-display": "flex",
+    "in-justify-content": "center",
+    "in-align-items": "center",
+    "in-flex-direction": "column",
     content: [
         div({
-            attrs: { "in-margin-bottom": "1rem" },
+            "in-margin-bottom": "1rem",
             content: h1({ content: 0 }),
         }),
         div({
             content: [
                 button({
-                    attrs: { "in-padding": "1em", "in-margin-right": "1em" },
+                    "in-padding": "1em",
+                    "in-margin-right": "1em",
                     content: "increment",
                 }),
                 button({
-                    attrs: { "in-padding": "1em" },
+                    "in-padding": "1em",
                     content: "decrement",
                 }),
             ],
