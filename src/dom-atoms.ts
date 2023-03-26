@@ -62,9 +62,16 @@ const extractValidAttrs = (
         }, {});
 };
 
+const isValidProtonSpec = (data: any) => {
+    return (
+        isType(data, "function") ||
+        (data instanceof Array && data.every((val) => isType(val, "function")))
+    );
+};
+
 const extractProtons = (data: Record<string, any>): Record<string, Proton> => {
     return Object.keys(data)
-        .filter((key) => typeof data[key] === "function")
+        .filter((key) => isValidProtonSpec(data[key]))
         .reduce((object: Record<string, any>, key) => {
             object[key] = data[key];
             return object;
@@ -80,6 +87,11 @@ const convertInvalidContent = (content: any): Atom | Atom[] => {
 
 const activateProtons = (el: HTMLElement, protons: Record<string, Proton>) => {
     for (const protonKey in protons) {
+        const protonOrProtonList = protons[protonKey];
+        if (protonOrProtonList instanceof Array) {
+            protonOrProtonList.forEach((proton) => proton(el));
+            continue;
+        }
         protons[protonKey](el);
     }
 };
@@ -167,9 +179,14 @@ export const counter = div({
                     "in-padding": "1em",
                     "in-margin-right": "1em",
                     content: "increment",
-                    on: on("click", () => {
-                        console.log("increment");
-                    }),
+                    on: [
+                        on("click", () => {
+                            console.log("increment");
+                        }),
+                        on("click", () => {
+                            console.log("another one");
+                        }),
+                    ],
                 }),
                 button({
                     "in-padding": "1em",
