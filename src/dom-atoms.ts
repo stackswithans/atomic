@@ -1,8 +1,9 @@
 import { isTypePred, isType } from "./utils";
+import { Proton, on } from "./protons";
 
 const CONTENTKEY = "content";
 
-type HTMLAttributes = Record<string, string>;
+type HTMLAttributes = Record<string, string | boolean>;
 
 interface Atom {
     render(): Node;
@@ -13,6 +14,7 @@ interface DOMAtom extends Atom {
     attrs: HTMLAttributes;
     subTree: Node | null;
     content: Atom[] | Atom;
+    protons: Record<string, Proton>;
     mount(selector: string): void;
 }
 
@@ -28,7 +30,7 @@ const renderContent = (content: any): Node => {
 
 const setAttrs = (el: HTMLElement, attrs: HTMLAttributes) => {
     Object.keys(attrs).forEach((key) => {
-        el.setAttribute(key, attrs[key]);
+        el.setAttribute(key, attrs[key].toString());
     });
 };
 
@@ -45,25 +47,56 @@ const text = (content: any): Atom => {
     };
 };
 
+const extractValidAttrs = (
+    data: Record<string, any>
+): Record<string, string | boolean> => {
+    return Object.keys(data)
+        .filter(
+            (key) =>
+                (key !== CONTENTKEY && typeof data[key] === "string") ||
+                typeof data[key] === "boolean"
+        )
+        .reduce((object: Record<string, any>, key) => {
+            object[key] = data[key];
+            return object;
+        }, {});
+};
+
+const extractProtons = (data: Record<string, any>): Record<string, Proton> => {
+    return Object.keys(data)
+        .filter((key) => typeof data[key] === "function")
+        .reduce((object: Record<string, any>, key) => {
+            object[key] = data[key];
+            return object;
+        }, {});
+};
+
+const convertInvalidContent = (content: any): Atom | Atom[] => {
+    return typeof content["render"] !== "function" &&
+        !isTypePred<Array<any>>(content, Array)
+        ? text(content)
+        : content;
+};
+
+const activateProtons = (el: HTMLElement, protons: Record<string, Proton>) => {
+    for (const protonKey in protons) {
+        protons[protonKey](el);
+    }
+};
+
 const makeGenericDOMAtomFn = (el: string) => {
     return (data: Record<string, any>): DOMAtom => {
-        let content = data.content;
-        let attrs = Object.keys(data)
-            .filter((value) => value !== CONTENTKEY)
-            .reduce((object: Record<string, any>, key) => {
-                object[key] = data[key];
-                return object;
-            }, {});
-        if (
-            typeof content["render"] !== "function" &&
-            !isTypePred<Array<any>>(content, Array)
-        ) {
-            content = text(content);
-        }
+        let content = convertInvalidContent(data.content);
+        let attrs = extractValidAttrs(data);
+        let protons = extractProtons(data);
+
+        console.log(protons);
+
         return {
             el,
             attrs: attrs ? attrs : {},
             content,
+            protons,
             subTree: null,
             render(): Node {
                 const elNode = document.createElement(el);
@@ -77,6 +110,7 @@ const makeGenericDOMAtomFn = (el: string) => {
                 }
                 setAttrs(elNode, this.attrs);
                 this.subTree = elNode;
+                activateProtons(elNode, this.protons);
                 return elNode;
             },
             mount(selector: string) {
@@ -133,10 +167,16 @@ export const counter = div({
                     "in-padding": "1em",
                     "in-margin-right": "1em",
                     content: "increment",
+                    on: on("click", () => {
+                        console.log("increment");
+                    }),
                 }),
                 button({
                     "in-padding": "1em",
                     content: "decrement",
+                    on: on("click", () => {
+                        console.log("decrement");
+                    }),
                 }),
             ],
         }),
