@@ -1,5 +1,6 @@
 import { isType, isObject, isTypePred } from "./utils";
 import { ViewContext } from "./view";
+import { Atom } from "./dom-atoms";
 
 const orbitRootKey = "__root";
 
@@ -26,12 +27,10 @@ export class Electron<T> {
     view(): T {
         return this._data;
     }
-    mutate(state: T): T;
 
     mutate(mutation: T | ((oldState: T) => T)): T {
         let newVal: T;
-        console.log("MUTATING");
-        if (isTypePred<Function>(mutation, "function")) {
+        if (isTypePred<Function>(mutation, Function)) {
             newVal = mutation(this._data);
         } else {
             newVal = mutation;
@@ -62,14 +61,16 @@ export type OrbitRefs<T> = Record<string, Electron<T>>;
 
 type AtomicState = Omit<Primitive<State>, "object">;
 
-class Orbit<T extends AtomicState> {
+class Orbit<T> {
     private _electrons: OrbitRefs<T>;
 
     constructor(initialState: T) {
-        if (!isType(initialState, "object")) {
-            throw new Error("Orbit initial state must be an object");
-        }
         this._electrons = {};
+        if (!isType(initialState, "object")) {
+            const electron = makeElectron(orbitRootKey, initialState);
+            this._electrons[orbitRootKey] = electron;
+            return;
+        }
         this._buildRefs(orbitRootKey, initialState);
     }
 
@@ -98,7 +99,26 @@ class Orbit<T extends AtomicState> {
     }
 }
 
-export function useOrbit<T extends AtomicState>(initialState: T) {
+export function useOrbit<T>(initialState: T) {
     const orbit = new Orbit(initialState);
     return orbit.getElectrons().__root;
 }
+
+export function reactive<T extends Object>(electron: Electron<T>): Atom {
+    return {
+        render(parent: HTMLElement) {
+            //We are certain that we are a text node because of the context
+            //in which we are used
+            const textNode = document.createTextNode(
+                electron.view().toString()
+            );
+            electron.observe(
+                (newVal: T) => (textNode.textContent = newVal.toString())
+            );
+            return textNode;
+        },
+    };
+}
+
+export const reactiveTransform = (content: any) =>
+    content instanceof Electron ? reactive(content) : null;

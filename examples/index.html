@@ -22,11 +22,12 @@
         "use strict";
         import { initAtomic, atom, view, on, useOrbit, DOMAtoms } from "./bundle.js";
 
-        const { buildAtomTree, counter, div, mountAtom } = DOMAtoms;
+        const { buildAtomTree, Counter, div, mountAtom } = DOMAtoms;
         
 
-        const count = useOrbit({count: 0});
-        console.log(count);
+        const count = useOrbit(0);
+        console.log("electron", count);
+        /*
 
 
         const Counter = atom({
@@ -70,7 +71,7 @@
                     {
                         h1: {
                             $attr: "hello",
-                            _: count.count.view(),
+                            _: count.view(),
                         },
                     },
                     {
@@ -78,11 +79,10 @@
                     },
                 ],
             },
-        };
+        };*/
 
         
-        counter.mount("#main");
-
+        Counter.mount("#main");
 
         //initAtomic("#main", Counter());
     </script>

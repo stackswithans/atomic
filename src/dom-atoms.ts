@@ -1,32 +1,25 @@
 import { isTypePred, isType } from "./utils";
 import { Proton, on } from "./protons";
+import { useOrbit, Electron, reactiveTransform } from "./orbit";
 
 const CONTENTKEY = "content";
 
 type HTMLAttributes = Record<string, string | boolean>;
 
-interface Atom {
-    render(): Node;
+export interface Atom {
+    render(parent: HTMLElement | null): Node;
 }
 
 interface DOMAtom extends Atom {
     el: string;
     attrs: HTMLAttributes;
-    subTree: Node | null;
+    node: Node | null;
     content: Atom[] | Atom;
     protons: Record<string, Proton>;
     mount(selector: string): void;
 }
 
 const plainText = (anything: any): string => `${anything}`;
-
-const renderContent = (content: any): Node => {
-    if (typeof content["render"] !== "function") {
-        return document.createTextNode(plainText(content));
-    } else {
-        return content.render();
-    }
-};
 
 const setAttrs = (el: HTMLElement, attrs: HTMLAttributes) => {
     Object.keys(attrs).forEach((key) => {
@@ -43,7 +36,8 @@ const siblings = (atoms: Atom[]): Atom => {
 
 const text = (content: any): Atom => {
     return {
-        render: (): Node => document.createTextNode(plainText(content)),
+        render: (parent: HTMLElement): Node =>
+            document.createTextNode(plainText(content)),
     };
 };
 
@@ -78,11 +72,11 @@ const extractProtons = (data: Record<string, any>): Record<string, Proton> => {
         }, {});
 };
 
-const convertInvalidContent = (content: any): Atom | Atom[] => {
+const textTransform = (content: any): Atom | Atom[] | null => {
     return typeof content["render"] !== "function" &&
         !isTypePred<Array<any>>(content, Array)
         ? text(content)
-        : content;
+        : null;
 };
 
 const activateProtons = (el: HTMLElement, protons: Record<string, Proton>) => {
@@ -96,9 +90,27 @@ const activateProtons = (el: HTMLElement, protons: Record<string, Proton>) => {
     }
 };
 
+type Transform = (content: any) => Atom | Atom[] | null;
+
+function runContentTransforms(
+    content: any,
+    transforms: Transform[]
+): Atom | Atom[] {
+    for (const transform of transforms) {
+        const result = transform(content);
+        if (result) {
+            return result;
+        }
+    }
+    return content;
+}
+
 const makeGenericDOMAtomFn = (el: string) => {
     return (data: Record<string, any>): DOMAtom => {
-        let content = convertInvalidContent(data.content);
+        let content = runContentTransforms(data.content, [
+            reactiveTransform,
+            textTransform,
+        ]);
         let attrs = extractValidAttrs(data);
         let protons = extractProtons(data);
 
@@ -109,24 +121,23 @@ const makeGenericDOMAtomFn = (el: string) => {
             attrs: attrs ? attrs : {},
             content,
             protons,
-            subTree: null,
-            render(): Node {
+            node: null,
+            render(parent: HTMLElement | null): Node {
                 const elNode = document.createElement(el);
-
                 if (isTypePred<Array<Atom>>(this.content, Array)) {
                     this.content.forEach((child) => {
-                        elNode.appendChild(child.render());
+                        elNode.appendChild(child.render(elNode));
                     });
                 } else {
-                    elNode.appendChild(this.content.render());
+                    elNode.appendChild(this.content.render(elNode));
                 }
                 setAttrs(elNode, this.attrs);
-                this.subTree = elNode;
+                this.node = elNode;
                 activateProtons(elNode, this.protons);
                 return elNode;
             },
             mount(selector: string) {
-                const atomTree = this.render();
+                const atomTree = this.render(null);
                 const mountPoint = document.querySelector(selector);
                 mountPoint?.replaceWith(atomTree);
             },
@@ -161,7 +172,10 @@ const Counter = div({
     })
 })
 */
-export const counter = div({
+
+const count = useOrbit(0);
+
+export const Counter = div({
     "in-width": "100%",
     "in-height": "100%",
     "in-display": "flex",
@@ -171,7 +185,7 @@ export const counter = div({
     content: [
         div({
             "in-margin-bottom": "1rem",
-            content: h1({ content: 0 }),
+            content: h1({ content: count }),
         }),
         div({
             content: [
@@ -179,20 +193,15 @@ export const counter = div({
                     "in-padding": "1em",
                     "in-margin-right": "1em",
                     content: "increment",
-                    on: [
-                        on("click", () => {
-                            console.log("increment");
-                        }),
-                        on("click", () => {
-                            console.log("another one");
-                        }),
-                    ],
+                    on: on("click", () => {
+                        count.mutate((count) => count + 1);
+                    }),
                 }),
                 button({
                     "in-padding": "1em",
                     content: "decrement",
                     on: on("click", () => {
-                        console.log("decrement");
+                        count.mutate((count) => count - 1);
                     }),
                 }),
             ],
