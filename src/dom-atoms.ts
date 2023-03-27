@@ -147,6 +147,11 @@ const makeGenericDOMAtomFn = (el: string) => {
 
 export const div = makeGenericDOMAtomFn("div");
 export const h1 = makeGenericDOMAtomFn("h1");
+export const h2 = makeGenericDOMAtomFn("h2");
+export const h3 = makeGenericDOMAtomFn("h3");
+export const h4 = makeGenericDOMAtomFn("h4");
+export const h5 = makeGenericDOMAtomFn("h5");
+export const h6 = makeGenericDOMAtomFn("h6");
 export const button = makeGenericDOMAtomFn("button");
 /*
 const Counter = {
@@ -174,36 +179,92 @@ const Counter = div({
 */
 
 const count = useOrbit(0);
+let intervalId: ReturnType<typeof setInterval> | null = null;
+
+const CounterBtn = (props: Record<string, any>): Atom => {
+    return button({
+        "in-background-color": props.bgColor,
+        "in-color": "white",
+        "in-padding": "1em 2em",
+        "in-border-radius": "20px",
+        content: props.text,
+        on: on("click", props.onClick),
+    });
+};
 
 export const Counter = div({
     "in-width": "100%",
     "in-height": "100%",
     "in-display": "flex",
+    "in-background-color": "black",
+    "in-color": "white",
     "in-justify-content": "center",
     "in-align-items": "center",
     "in-flex-direction": "column",
+    "in-gap": "1em",
     content: [
+        h4({
+            content: "Counter",
+        }),
         div({
             "in-margin-bottom": "1rem",
             content: h1({ content: count }),
         }),
         div({
+            "in-display": "flex",
+            "in-gap": "1.5em",
             content: [
+                CounterBtn({
+                    text: "Start",
+                    bgColor: "green",
+                    onClick: () => {
+                        setInterval;
+                        intervalId = setInterval(
+                            () => count.mutate((count) => count + 1),
+                            1000
+                        );
+                    },
+                }),
+                CounterBtn({
+                    text: "Stop",
+                    bgColor: "red",
+                    onClick: () => {
+                        if (!intervalId) return;
+                        clearInterval(intervalId);
+                        intervalId = null;
+                    },
+                }),
+                CounterBtn({
+                    text: "Reset",
+                    bgColor: "blue",
+                    onClick: () => {
+                        if (intervalId) {
+                            clearInterval(intervalId);
+                            intervalId = null;
+                        }
+                        count.mutate(0);
+                    },
+                }),
+                /*
                 button({
+                    "in-background-color": "red",
+                    "in-color": "white",
                     "in-padding": "1em",
                     "in-margin-right": "1em",
-                    content: "increment",
+                    "in-border-radius": "20px",
+                    content: "Start",
                     on: on("click", () => {
                         count.mutate((count) => count + 1);
                     }),
                 }),
                 button({
                     "in-padding": "1em",
-                    content: "decrement",
+                    content: "Stop",
                     on: on("click", () => {
                         count.mutate((count) => count - 1);
                     }),
-                }),
+                })*/
+                ,
             ],
         }),
     ],
