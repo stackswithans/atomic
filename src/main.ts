@@ -1,12 +1,10 @@
 /*@ts-ignore*/
 import { getUniqueId, isType } from "./utils";
-import { atom, Atom } from "./atom";
-import { view } from "./view";
-import { on } from "./protons";
+import * as protons from "./protons";
 import { useOrbit } from "./orbit";
-import { runAtomicEventSetup } from "./event";
-import * as DOMAtoms from "./dom-atoms";
+import * as DOMParticle from "./dom-particle";
 
+/*
 const initAtomic = async (
     selectorOrEl: string | HTMLElement,
     rootAtom: Atom
@@ -23,7 +21,7 @@ const initAtomic = async (
     const children: ChildNode[] = [];
     rootAtom.subTree?.forEach((child) => children.push(child));
     el.replaceWith(...children);
-    runAtomicEventSetup();
+    //runAtomicEventSetup();
     //await createDataBindings(el, atomicCtx);
-};
-export { initAtomic, atom, view, on, useOrbit, DOMAtoms };
+};*/
+export { protons, useOrbit, DOMParticle };

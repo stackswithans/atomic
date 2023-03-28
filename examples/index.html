@@ -21,9 +21,9 @@
     </script>
     <script type="module">
         "use strict";
-        import { initAtomic, atom, view, on, useOrbit, DOMAtoms } from "./bundle.js";
+        import { protons, useOrbit, DOMParticle } from "./bundle.js";
 
-        const { buildAtomTree, Counter, div, mountAtom } = DOMAtoms;
+        const { Counter, div} = DOMParticle;
         
 
         const count = useOrbit(0);

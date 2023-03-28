@@ -1,20 +1,17 @@
 import { isTypePred, isType } from "./utils";
 import { Proton, on } from "./protons";
 import { useOrbit, Electron, reactiveTransform } from "./orbit";
+import { Particle, Atom } from "./atom";
 
 const CONTENTKEY = "content";
 
 type HTMLAttributes = Record<string, string | boolean>;
 
-export interface Atom {
-    render(parent: HTMLElement | null): Node;
-}
-
-interface DOMAtom extends Atom {
+interface DOMParticle extends Particle {
     el: string;
     attrs: HTMLAttributes;
     node: Node | null;
-    content: Atom[] | Atom;
+    content: Particle | Particle[];
     protons: Record<string, Proton>;
     mount(selector: string): void;
 }
@@ -34,7 +31,7 @@ const siblings = (atoms: Atom[]): Atom => {
     };
 };*/
 
-const text = (content: any): Atom => {
+const text = (content: any): Particle => {
     return {
         render: (parent: HTMLElement): Node =>
             document.createTextNode(plainText(content)),
@@ -72,7 +69,7 @@ const extractProtons = (data: Record<string, any>): Record<string, Proton> => {
         }, {});
 };
 
-const textTransform = (content: any): Atom | Atom[] | null => {
+const textTransform = (content: any): Particle | Particle[] | null => {
     return typeof content["render"] !== "function" &&
         !isTypePred<Array<any>>(content, Array)
         ? text(content)
@@ -90,12 +87,12 @@ const activateProtons = (el: HTMLElement, protons: Record<string, Proton>) => {
     }
 };
 
-type Transform = (content: any) => Atom | Atom[] | null;
+type Transform = (content: any) => Particle | Particle[] | null;
 
 function runContentTransforms(
     content: any,
     transforms: Transform[]
-): Atom | Atom[] {
+): Particle | Particle[] {
     for (const transform of transforms) {
         const result = transform(content);
         if (result) {
@@ -105,8 +102,8 @@ function runContentTransforms(
     return content;
 }
 
-const makeGenericDOMAtomFn = (el: string) => {
-    return (data: Record<string, any>): DOMAtom => {
+const makeGenericDOMParticleFn = (el: string) => {
+    return (data: Record<string, any>): DOMParticle => {
         let content = runContentTransforms(data.content, [
             reactiveTransform,
             textTransform,
@@ -124,7 +121,7 @@ const makeGenericDOMAtomFn = (el: string) => {
             node: null,
             render(parent: HTMLElement | null): Node {
                 const elNode = document.createElement(el);
-                if (isTypePred<Array<Atom>>(this.content, Array)) {
+                if (isTypePred<Array<Particle>>(this.content, Array)) {
                     this.content.forEach((child) => {
                         elNode.appendChild(child.render(elNode));
                     });
@@ -145,14 +142,14 @@ const makeGenericDOMAtomFn = (el: string) => {
     };
 };
 
-export const div = makeGenericDOMAtomFn("div");
-export const h1 = makeGenericDOMAtomFn("h1");
-export const h2 = makeGenericDOMAtomFn("h2");
-export const h3 = makeGenericDOMAtomFn("h3");
-export const h4 = makeGenericDOMAtomFn("h4");
-export const h5 = makeGenericDOMAtomFn("h5");
-export const h6 = makeGenericDOMAtomFn("h6");
-export const button = makeGenericDOMAtomFn("button");
+export const div = makeGenericDOMParticleFn("div");
+export const h1 = makeGenericDOMParticleFn("h1");
+export const h2 = makeGenericDOMParticleFn("h2");
+export const h3 = makeGenericDOMParticleFn("h3");
+export const h4 = makeGenericDOMParticleFn("h4");
+export const h5 = makeGenericDOMParticleFn("h5");
+export const h6 = makeGenericDOMParticleFn("h6");
+export const button = makeGenericDOMParticleFn("button");
 /*
 const Counter = {
     div: {
@@ -181,7 +178,7 @@ const Counter = div({
 const count = useOrbit(0);
 let intervalId: ReturnType<typeof setInterval> | null = null;
 
-const CounterBtn = (props: Record<string, any>): Atom => {
+const CounterBtn = (props: Record<string, any>): Particle => {
     return button({
         "in-background-color": props.bgColor,
         "in-color": "white",

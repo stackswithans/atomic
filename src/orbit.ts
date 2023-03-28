@@ -1,6 +1,5 @@
 import { isType, isObject, isTypePred } from "./utils";
-import { ViewContext } from "./view";
-import { Atom } from "./dom-atoms";
+import { Particle } from "./atom";
 
 const orbitRootKey = "__root";
 
@@ -18,12 +17,6 @@ export class Electron<T> {
     private _data: T;
     [key: string]: Primitive<T>;
 
-    compile(ctx: ViewContext): string {
-        //Do not add subscription if it is a reRender
-        if (!ctx.ctxAtom.reRender)
-            this.observe(() => ctx.ctxAtom.onMutation(this));
-        return `${this.view()}`;
-    }
     view(): T {
         return this._data;
     }
@@ -58,8 +51,6 @@ const makeElectron = <T>(path: string, data: T): Electron<T> =>
     new Electron(path, data);
 
 export type OrbitRefs<T> = Record<string, Electron<T>>;
-
-type AtomicState = Omit<Primitive<State>, "object">;
 
 class Orbit<T> {
     private _electrons: OrbitRefs<T>;
@@ -104,7 +95,7 @@ export function useOrbit<T>(initialState: T) {
     return orbit.getElectrons().__root;
 }
 
-export function reactive<T extends Object>(electron: Electron<T>): Atom {
+export function reactive<T extends Object>(electron: Electron<T>): Particle {
     return {
         render(parent: HTMLElement) {
             //We are certain that we are a text node because of the context
