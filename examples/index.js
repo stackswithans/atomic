@@ -1,14 +1,18 @@
-import { createElectron, Electron, reactiveTransform } from "./electron";
-import { Particle, Atom } from "./atom";
-import { on } from "./protons";
-import { div, h1, h4, button } from "./dom-particle";
-import { If } from "./core-atoms";
+import {
+    createElectron,
+    DOMParticle,
+    CoreAtom,
+    protons,
+} from "./atomic.esm-browser.js";
+
+const { on } = protons;
+const { div, button, h1, h4 } = DOMParticle;
+const { If } = CoreAtom;
 
 const count = createElectron(0);
-let intervalId: ReturnType<typeof setInterval> | null = null;
-console.log(count);
+let intervalId = null;
 
-const CounterBtn = (props: Record<string, any>): Particle => {
+const CounterBtn = (props) => {
     return button({
         "in-background-color": props.bgColor,
         "in-color": "white",
@@ -19,7 +23,7 @@ const CounterBtn = (props: Record<string, any>): Particle => {
     });
 };
 
-export const Counter = div({
+const Counter = div({
     "in-width": "100%",
     "in-height": "100%",
     "in-display": "flex",
@@ -80,7 +84,7 @@ export const Counter = div({
 
 const visible = createElectron(true);
 
-export const IfTest = div({
+const IfTest = div({
     "in-width": "100%",
     "in-height": "100%",
     "in-display": "flex",
@@ -109,3 +113,5 @@ export const IfTest = div({
         }),
     ],
 });
+
+Counter.mount("#main");

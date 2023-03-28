@@ -95,8 +95,6 @@ const DOMParticleBuilder = (el: keyof HTMLElementTagNameMap) => {
         let attrs = attrFilter(data);
         let protons = protonFilter(data);
 
-        console.log(protons);
-
         return {
             el,
             attrs: attrs ? attrs : {},
