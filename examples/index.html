@@ -21,71 +21,9 @@
     </script>
     <script type="module">
         "use strict";
-        import { protons, useOrbit, DOMParticle } from "./bundle.js";
+        import { protons, useOrbit, Counter } from "./bundle.js";
 
-        const { Counter, div} = DOMParticle;
-        
-
-        const count = useOrbit(0);
-        console.log("electron", count);
-        /*
-
-
-        const Counter = atom({
-            state: { count: 0 }, 
-            view: view`
-                <div 
-                 in-width="100%" 
-                 in-height="100%"
-                 in-display="flex"
-                 in-justify-content="center"
-                 in-align-items="center"
-                 in-flex-direction="column"
-                >
-                    <div in-margin-bottom="1rem">
-                        <h1>${count.count}</h1>
-                    </div>
-                    <div>
-                        <button ${on("click", "increment")} type="button" in-padding="1em">
-                            Increment
-                        </button>
-                        <button ${on("click", "decrement")} type="button" in-padding="1em">
-                            Decrement
-                        </button>
-                    </div>
-                </div>
-            `,  
-            actions: {
-                increment(){
-                    count.count.mutate((count) => count + 1);
-                    console.log(count.count.view())
-                }, 
-                decrement(){
-                    count.count.mutate((count) => count - 1);
-                    console.log(count.count.view())
-                }
-            }
-        });
-        let other = {
-            div: {
-                div: [
-                    {
-                        h1: {
-                            $attr: "hello",
-                            _: count.view(),
-                        },
-                    },
-                    {
-                        button: "increment",
-                    },
-                ],
-            },
-        };*/
-
-        
         Counter.mount("#main");
-
-        //initAtomic("#main", Counter());
     </script>
 </body>
 </html>

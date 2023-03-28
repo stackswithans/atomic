@@ -20,3 +20,15 @@ export function isObject(obj: any): obj is object {
 export function isTypePred<T>(obj: any, typeObj: Function): obj is T {
     return obj instanceof typeObj;
 }
+
+export function keyFilter<T extends Record<string, any>>(
+    target: T,
+    filter: (key: keyof T) => boolean
+): Record<string, any> {
+    return Object.keys(target)
+        .filter(filter)
+        .reduce((object: T, key: keyof T) => {
+            object[key] = target[key];
+            return object;
+        }, {} as T);
+}
