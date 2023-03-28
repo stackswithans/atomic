@@ -85,6 +85,7 @@ export function reactive<T extends Object>(electron: Electron<T>): Particle {
         render(parent: HTMLElement) {
             //We are certain that we are a text node because of the context
             //in which we are used
+            console.log("rendering electron");
             const textNode = document.createTextNode(
                 electron.view().toString()
             );

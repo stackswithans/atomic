@@ -6,6 +6,7 @@ import { If } from "./core-atoms";
 
 const count = createElectron(0);
 let intervalId: ReturnType<typeof setInterval> | null = null;
+console.log(count);
 
 const CounterBtn = (props: Record<string, any>): Particle => {
     return button({

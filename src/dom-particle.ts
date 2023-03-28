@@ -1,6 +1,6 @@
 import { isTypePred, isType, keyFilter } from "./utils";
 import { Proton } from "./protons";
-import { reactiveTransform } from "./orbit";
+import { reactiveTransform } from "./electron";
 import { Particle } from "./atom";
 
 type HTMLAttributes = Record<string, string | boolean>;
