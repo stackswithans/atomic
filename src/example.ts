@@ -2,13 +2,12 @@ import { useOrbit, Electron, reactiveTransform } from "./orbit";
 import { Particle, Atom } from "./atom";
 import { on } from "./protons";
 import { div, h1, h4, button } from "./dom-particle";
+import { If } from "./core-atoms";
 
 const count = useOrbit(0);
 let intervalId: ReturnType<typeof setInterval> | null = null;
 
-const CounterBtn: Atom<{ text: string; onClick: Function; bgColor: string }> = (
-    props: Record<string, any>
-): Particle => {
+const CounterBtn = (props: Record<string, any>): Particle => {
     return button({
         "in-background-color": props.bgColor,
         "in-color": "white",
@@ -74,6 +73,38 @@ export const Counter = div({
                 }),
                 ,
             ],
+        }),
+    ],
+});
+
+const visible = useOrbit(true);
+
+export const IfTest = div({
+    "in-width": "100%",
+    "in-height": "100%",
+    "in-display": "flex",
+    "in-background-color": "black",
+    "in-color": "white",
+    "in-justify-content": "center",
+    "in-align-items": "center",
+    "in-flex-direction": "column",
+    gap: "1.2em",
+    content: [
+        If(
+            visible,
+            div({
+                "in-width": "50px",
+                "in-height": "50px",
+                "in-background-color": "red",
+            })
+        ),
+        button({
+            "in-padding": "1em 2em",
+            "in-border-radius": "20px",
+            "in-background-color": "blue",
+            "in-color": "white",
+            content: "ToggleVis",
+            on: on("click", () => visible.mutate(!visible.view())),
         }),
     ],
 });

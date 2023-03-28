@@ -14,7 +14,7 @@ export interface DOMParticle extends Particle {
     el: string;
     attrs: HTMLAttributes;
     node: Node | null;
-    content: Particle | Particle[];
+    content: Particle | Particle[] | null;
     protons: Record<string, Proton>;
     mount(selector: string): void;
 }
@@ -85,11 +85,13 @@ const activateProtons = (el: HTMLElement, protons: Record<string, Proton>) => {
 };
 
 const DOMParticleBuilder = (el: keyof HTMLElementTagNameMap) => {
-    return (data: DOMParticleShape): DOMParticle => {
-        let content = runContentTransforms(data.content, [
-            reactiveTransform,
-            textTransform,
-        ]);
+    return (data: DOMParticleShape | VoidDOMParticleShape): DOMParticle => {
+        let content = data.content
+            ? runContentTransforms(data.content, [
+                  reactiveTransform,
+                  textTransform,
+              ])
+            : null;
         let attrs = attrFilter(data);
         let protons = protonFilter(data);
 
@@ -102,7 +104,15 @@ const DOMParticleBuilder = (el: keyof HTMLElementTagNameMap) => {
             protons,
             node: null,
             render(parent: HTMLElement | null): Node {
+                //If node has already been rendered
+                if (this.node) return this.node;
+
                 const elNode = document.createElement(el);
+                setAttrs(elNode, this.attrs);
+                this.node = elNode;
+                activateProtons(elNode, this.protons);
+                if (!this.content) return elNode;
+
                 if (isTypePred<Array<Particle>>(this.content, Array)) {
                     this.content.forEach((child) => {
                         elNode.appendChild(child.render(elNode));
@@ -110,34 +120,6 @@ const DOMParticleBuilder = (el: keyof HTMLElementTagNameMap) => {
                 } else {
                     elNode.appendChild(this.content.render(elNode));
                 }
-                setAttrs(elNode, this.attrs);
-                this.node = elNode;
-                activateProtons(elNode, this.protons);
-                return elNode;
-            },
-            mount(selector: string) {
-                const atomTree = this.render(null);
-                const mountPoint = document.querySelector(selector);
-                mountPoint?.replaceWith(atomTree);
-            },
-        };
-    };
-};
-
-const VoidDOMParticleBuilder = (el: keyof HTMLElementTagNameMap) => {
-    return (data: VoidDOMParticleShape): VoidDOMParticle => {
-        let attrs = attrFilter(data);
-        let protons = protonFilter(data);
-        return {
-            el,
-            attrs: attrs ? attrs : {},
-            protons,
-            node: null,
-            render(parent: HTMLElement | null): Node {
-                const elNode = document.createElement(el);
-                setAttrs(elNode, this.attrs);
-                this.node = elNode;
-                activateProtons(elNode, this.protons);
                 return elNode;
             },
             mount(selector: string) {
@@ -150,19 +132,19 @@ const VoidDOMParticleBuilder = (el: keyof HTMLElementTagNameMap) => {
 };
 
 //Particle builders for void html elements
-export const area = VoidDOMParticleBuilder("area");
-export const base = VoidDOMParticleBuilder("base");
-export const br = VoidDOMParticleBuilder("br");
-export const col = VoidDOMParticleBuilder("col");
-export const embed = VoidDOMParticleBuilder("embed");
-export const hr = VoidDOMParticleBuilder("hr");
-export const img = VoidDOMParticleBuilder("img");
-export const input = VoidDOMParticleBuilder("input");
-export const link = VoidDOMParticleBuilder("link");
-export const meta = VoidDOMParticleBuilder("meta");
-export const source = VoidDOMParticleBuilder("source");
-export const track = VoidDOMParticleBuilder("track");
-export const wbr = VoidDOMParticleBuilder("wbr");
+export const area = DOMParticleBuilder("area");
+export const base = DOMParticleBuilder("base");
+export const br = DOMParticleBuilder("br");
+export const col = DOMParticleBuilder("col");
+export const embed = DOMParticleBuilder("embed");
+export const hr = DOMParticleBuilder("hr");
+export const img = DOMParticleBuilder("img");
+export const input = DOMParticleBuilder("input");
+export const link = DOMParticleBuilder("link");
+export const meta = DOMParticleBuilder("meta");
+export const source = DOMParticleBuilder("source");
+export const track = DOMParticleBuilder("track");
+export const wbr = DOMParticleBuilder("wbr");
 
 //Particle builders for normal html elements
 export const div = DOMParticleBuilder("div");

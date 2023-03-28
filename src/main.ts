@@ -3,7 +3,7 @@ import { getUniqueId, isType } from "./utils";
 import * as protons from "./protons";
 import { useOrbit } from "./orbit";
 import * as DOMParticle from "./dom-particle";
-import { Counter } from "./example";
+import { Counter, IfTest } from "./example";
 /*
 const initAtomic = async (
     selectorOrEl: string | HTMLElement,
@@ -24,4 +24,4 @@ const initAtomic = async (
     //runAtomicEventSetup();
     //await createDataBindings(el, atomicCtx);
 };*/
-export { protons, useOrbit, Counter };
+export { protons, useOrbit, Counter, IfTest, DOMParticle };

@@ -2,4 +2,4 @@ export interface Particle {
     render(parent: HTMLElement | null): Node;
 }
 
-export type Atom<P> = (props: P) => Particle;
+export type Atom = () => Particle;
