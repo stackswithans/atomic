@@ -1,7 +1,7 @@
 /*@ts-ignore*/
 import { getUniqueId, isType } from "./utils";
 import * as protons from "./protons";
-import { useOrbit } from "./orbit";
+import { createElectron } from "./electron";
 import * as DOMParticle from "./dom-particle";
 import { Counter, IfTest } from "./example";
 /*
@@ -24,4 +24,4 @@ const initAtomic = async (
     //runAtomicEventSetup();
     //await createDataBindings(el, atomicCtx);
 };*/
-export { protons, useOrbit, Counter, IfTest, DOMParticle };
+export { protons, createElectron, Counter, IfTest, DOMParticle };

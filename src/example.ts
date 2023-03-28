@@ -1,10 +1,10 @@
-import { useOrbit, Electron, reactiveTransform } from "./orbit";
+import { createElectron, Electron, reactiveTransform } from "./electron";
 import { Particle, Atom } from "./atom";
 import { on } from "./protons";
 import { div, h1, h4, button } from "./dom-particle";
 import { If } from "./core-atoms";
 
-const count = useOrbit(0);
+const count = createElectron(0);
 let intervalId: ReturnType<typeof setInterval> | null = null;
 
 const CounterBtn = (props: Record<string, any>): Particle => {
@@ -77,7 +77,7 @@ export const Counter = div({
     ],
 });
 
-const visible = useOrbit(true);
+const visible = createElectron(true);
 
 export const IfTest = div({
     "in-width": "100%",

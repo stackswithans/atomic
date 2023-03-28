@@ -1,5 +1,5 @@
 import { Particle } from "./atom";
-import { Electron } from "./orbit";
+import { Electron } from "./electron";
 
 type If = Particle & { thenNode: Node; elseNode: Node };
 

@@ -1,8 +1,6 @@
 import { isType, isObject, isTypePred } from "./utils";
 import { Particle } from "./atom";
 
-const orbitRootKey = "__root";
-
 type Primitive<T> = string | number | object | boolean | undefined | null | T;
 
 export type State = {
@@ -13,7 +11,6 @@ type onMutation<T> = (newVal: T) => void;
 
 export class Electron<T> {
     private _observers: onMutation<T>[] = [];
-    private _path: string;
     private _data: T;
     [key: string]: Primitive<T>;
 
@@ -30,69 +27,57 @@ export class Electron<T> {
         }
         this._data = newVal;
         this._observers.forEach((onMutation) => {
-            console.log("NOTIFYING SUBSCRIBERS");
             onMutation(newVal);
         });
         return newVal;
     }
 
     observe(fn: onMutation<T>): void {
-        console.log("SUBSCRIBED");
         this._observers.push(fn);
     }
 
-    constructor(path: string, data: T) {
-        this._path = path;
+    constructor(data: T) {
         this._data = data;
     }
 }
 
-const makeElectron = <T>(path: string, data: T): Electron<T> =>
-    new Electron(path, data);
+const makeElectron = <T>(data: T): Electron<T> => new Electron(data);
 
 export type OrbitRefs<T> = Record<string, Electron<T>>;
 
-class Orbit<T> {
-    private _electrons: OrbitRefs<T>;
+function makeElectronsFromObject<T>(
+    electronRoot: OrbitRefs<T>,
+    currentRootPath: string,
+    currentRootObj: T
+) {
+    const electron = makeElectron(currentRootObj);
 
-    constructor(initialState: T) {
-        this._electrons = {};
-        if (!isType(initialState, "object")) {
-            const electron = makeElectron(orbitRootKey, initialState);
-            this._electrons[orbitRootKey] = electron;
-            return;
-        }
-        this._buildRefs(orbitRootKey, initialState);
+    electronRoot[currentRootPath] = electron;
+    if (!isObject(currentRootObj)) {
+        return;
     }
+    for (const key in currentRootObj) {
+        const path = currentRootPath + "." + key;
+        electronRoot[currentRootPath][key] = makeElectron(currentRootObj[key]);
 
-    private _buildRefs(currentRootPath: string, currentRootObj: T) {
-        const electron = makeElectron(currentRootPath, currentRootObj);
-
-        this._electrons[currentRootPath] = electron;
-        if (!isObject(currentRootObj)) {
-            return;
-        }
-        for (const key in currentRootObj) {
-            const path = currentRootPath + "." + key;
-            this._electrons[currentRootPath][key] = makeElectron(
+        if (isType(currentRootObj[key], "object")) {
+            makeElectronsFromObject(
+                electronRoot,
                 path,
-                currentRootObj[key]
+                currentRootObj[key] as any
             );
-
-            if (isType(currentRootObj[key], "object")) {
-                this._buildRefs(path, currentRootObj[key] as any);
-            }
         }
-    }
-
-    getElectrons(): OrbitRefs<T> {
-        return this._electrons;
     }
 }
 
-export function useOrbit<T>(initialState: T) {
-    const orbit = new Orbit(initialState);
-    return orbit.getElectrons().__root;
+export function createElectron<T>(initialState: T) {
+    const orbitRootKey = "__root";
+    if (!isType(initialState, "object")) {
+        return makeElectron(initialState);
+    }
+    const electrons: OrbitRefs<T> = {};
+    makeElectronsFromObject(electrons, orbitRootKey, initialState);
+    return electrons.__root;
 }
 
 export function reactive<T extends Object>(electron: Electron<T>): Particle {
